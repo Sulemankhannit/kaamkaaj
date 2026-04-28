@@ -1,5 +1,18 @@
 from pydantic import BaseModel, Field
 from enum import Enum
+from sqlmodel import SQLModel,Field
+from datetime import datetime
+ 
+
+class Kaam(SQLModel, table=True):
+    id:int|None=Field(default=None,primary_key=True)
+    title:str=Field(index=True)
+    description:str|None=Field(default=None)
+    xp_reward:int
+    deadline:datetime|None=Field(default=None)
+    khiladi_id:int|None=Field(default=None,foreign_key="khiladi.id")
+
+
 
 class difficultylevel(str,Enum):
     easy="easy"

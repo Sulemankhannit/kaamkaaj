@@ -26,3 +26,10 @@ class KhiladiProfile(SQLModel):
     level:int=1
     clan_name:str|None=None
     bio:str|None=None
+
+class KhiladiUpdate(SQLModel):
+    password:str|None=None
+    email:str|None=None
+    clan_name:str|None=None
+    bio:str|None=None
+

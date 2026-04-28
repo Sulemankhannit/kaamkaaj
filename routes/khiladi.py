@@ -2,7 +2,7 @@ from fastapi import APIRouter,status,Depends,HTTPException
 from typing import Annotated
 from sqlmodel import Session,select
 from core.config import get_session
-from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic
+from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate
 
 router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
 
@@ -32,6 +32,33 @@ async def getKhiladiProfile(
     if not db_khiladi:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh khiladi exist nahi karta")
     return db_khiladi
+
+@router.patch("/{username}/updateProfile",response_model=KhiladiProfile)
+async def update_user_profile(username:str,khiladi_new_data:KhiladiUpdate,
+                              session:Annotated[Session,Depends(get_session)]):
+    statement=select(Khiladi).where(Khiladi.username==username)
+    db_khiladi=session.exec(statement).first()
+    if not db_khiladi:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh khiladi exist nahi karta!")
+    
+    data_to_be_updated=khiladi_new_data.model_dump(exclude_unset=True)
+    db_khiladi.sqlmodel_update(data_to_be_updated)
+    session.add(db_khiladi)
+    session.commit()
+    session.refresh(db_khiladi)
+    return db_khiladi
+
+@router.delete("/{username}/deleteProfile")
+async def deleteKhiladi(username:str,session:Annotated[Session,Depends(get_session)]):
+    statement=select(Khiladi).where(Khiladi.username==username)
+    db_khiladi=session.exec(statement).first()
+    if not db_khiladi:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh khiladi exist nahi karta!")
+    
+    session.delete(db_khiladi)
+    session.commit()
+    return {"message":f"permananently deleted {username}"}
+    
 
 @router.get("/{khiladi_id}/kaam")
 async def list_khiladi_kaam(khiladi_id:int,city:str,isurgent:bool,search_keyword:str|None=None):

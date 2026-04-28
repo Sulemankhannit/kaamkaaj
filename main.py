@@ -5,6 +5,7 @@ from routes import khiladi,kaam
 from sqlmodel import SQLModel
 from core.config import engine
 from schemas.khiladi import Khiladi
+from schemas.kaam import Kaam
 app=FastAPI()
 @app.on_event("startup")
 def on_startup():
