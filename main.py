@@ -6,6 +6,7 @@ from sqlmodel import SQLModel
 from core.config import engine
 from schemas.khiladi import Khiladi
 from schemas.kaam import Kaam
+from schemas.lakshya import Lakshya
 app=FastAPI()
 @app.on_event("startup")
 def on_startup():

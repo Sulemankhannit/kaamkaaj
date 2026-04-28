@@ -1,8 +1,11 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from sqlmodel import SQLModel,Field
+from typing import List,TYPE_CHECKING
+from sqlmodel import SQLModel,Field,Relationship
 from datetime import datetime
- 
+if TYPE_CHECKING:
+    from schemas.lakshya import Lakshya
+
 
 class Kaam(SQLModel, table=True):
     id:int|None=Field(default=None,primary_key=True)
@@ -10,8 +13,8 @@ class Kaam(SQLModel, table=True):
     description:str|None=Field(default=None)
     xp_reward:int
     deadline:datetime|None=Field(default=None)
-    khiladi_id:int|None=Field(default=None,foreign_key="khiladi.id")
-
+    lakshya_id:int=Field(foreign_key="lakshya.id")
+    lakshya:"Lakshya"=Relationship(back_populates="kaams")
 
 
 class difficultylevel(str,Enum):
@@ -23,6 +26,7 @@ class Kaam_Create(BaseModel):
     name:str
     description:str|None=None
     xp_reward:int
+    deadline:datetime|None=None
 
 class KaamUpdate(BaseModel):
     title:str=Field(min_length=3,max_length=50,description="The new title for the Kaam")
