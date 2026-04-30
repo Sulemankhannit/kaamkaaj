@@ -22,31 +22,31 @@ class difficultylevel(str,Enum):
     medium="medium"
     hard="hard"
 
-class Kaam_Create(BaseModel):
-    name:str
+class Kaam_Create(SQLModel):
+    title:str
     description:str|None=None
     xp_reward:int
     deadline:datetime|None=None
 
-class KaamUpdate(BaseModel):
+class KaamUpdate(SQLModel):
     title:str=Field(min_length=3,max_length=50,description="The new title for the Kaam")
     new_xp:int=Field(gt=0,le=10000)
 
 
-class KaamResolution(BaseModel):
+class KaamResolution(SQLModel):
     status:str
     hours_spent:int
 
-class Saboot(BaseModel):
+class Saboot(SQLModel):
     file_url:str
     description:str
 
 
-class KaamLocation(BaseModel):
+class KaamLocation(SQLModel):
     city:str
     danger_level:str
 
-class KammDetailedCreate(BaseModel):
+class KammDetailedCreate(SQLModel):
     title:str
     description:str|None=None
     tags:set[str]

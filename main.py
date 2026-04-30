@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from routes import khiladi,kaam
+from routes import khiladi,kaam,lakshya,auth
 from sqlmodel import SQLModel
 from core.config import engine
 from schemas.khiladi import Khiladi
 from schemas.kaam import Kaam
 from schemas.lakshya import Lakshya
+
 app=FastAPI()
 @app.on_event("startup")
 def on_startup():
@@ -26,6 +27,8 @@ async def validation_exceptio_handler(request,exc:RequestValidationError):
 
 app.include_router(khiladi.router)
 app.include_router(kaam.router)
+app.include_router(lakshya.router)
+app.include_router(auth.router)
 @app.get("/")
 async def welcome_to_kaamkaj():
     return{
