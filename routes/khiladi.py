@@ -63,20 +63,17 @@ async def get_my_profile(
     return current_user
 
 
-@router.patch("/{username}/updateProfile",response_model=KhiladiProfile)
-async def update_user_profile(username:str,khiladi_new_data:KhiladiUpdate,
+@router.patch("/me/updateProfile",response_model=KhiladiProfile)
+async def update_user_profile(khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],khiladi_new_data:KhiladiUpdate,
                               session:Annotated[Session,Depends(get_session)]):
-    statement=select(Khiladi).where(Khiladi.username==username)
-    db_khiladi=session.exec(statement).first()
-    if not db_khiladi:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh khiladi exist nahi karta!")
+    
     
     data_to_be_updated=khiladi_new_data.model_dump(exclude_unset=True)
-    db_khiladi.sqlmodel_update(data_to_be_updated)
-    session.add(db_khiladi)
+    khiladi.sqlmodel_update(data_to_be_updated)
+    session.add(khiladi)
     session.commit()
-    session.refresh(db_khiladi)
-    return db_khiladi
+    session.refresh(khiladi)
+    return khiladi
 
 @router.delete("/me/deleteProfile")
 async def deleteKhiladi(khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
