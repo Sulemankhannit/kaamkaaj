@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel,Field,Relationship
 from typing import List,TYPE_CHECKING
+from datetime import datetime
 from schemas.lakshya import LakshyaPublic
 if TYPE_CHECKING:
     from schemas.lakshya import Lakshya
@@ -13,6 +14,9 @@ class Khiladi(SQLModel,table=True):
     total_xp:int=Field(default=0)
     clan_name:str|None=Field(default=None)
     bio:str|None=Field(default=None)
+    is_verified: bool = Field(default=False)
+    otp_code: str | None = Field(default=None)
+    otp_expires_at: datetime | None = Field(default=None)
     lakshyas:list["Lakshya"]=Relationship(back_populates="khiladi")
     pro_user:bool=Field(default=False)
 
