@@ -20,5 +20,5 @@ class Lakshya(SQLModel,table=True):
     title:str
     description:str|None=Field(default=None)
     khiladi_id:int=Field(foreign_key="khiladi.id")
-    kaams:list["Kaam"]=Relationship(back_populates="lakshya")
+    kaams:list["Kaam"]=Relationship(back_populates="lakshya",cascade_delete=True)
     khiladi:"Khiladi"=Relationship(back_populates="lakshyas")

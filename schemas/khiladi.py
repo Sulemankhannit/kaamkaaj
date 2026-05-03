@@ -1,6 +1,7 @@
 from sqlmodel import SQLModel,Field,Relationship
 from typing import List,TYPE_CHECKING
 from datetime import datetime
+from pydantic import BaseModel
 from schemas.lakshya import LakshyaPublic
 if TYPE_CHECKING:
     from schemas.lakshya import Lakshya
@@ -9,7 +10,7 @@ class Khiladi(SQLModel,table=True):
     id:int|None=Field(primary_key=True,default=None)
     username:str=Field(unique=True,index=True)
     hashed_password:str
-    email:str
+    email:str=Field(unique=True,index=True)
     level:int=Field(default=1)
     total_xp:int=Field(default=0)
     clan_name:str|None=Field(default=None)
@@ -17,7 +18,7 @@ class Khiladi(SQLModel,table=True):
     is_verified: bool = Field(default=False)
     otp_code: str | None = Field(default=None)
     otp_expires_at: datetime | None = Field(default=None)
-    lakshyas:list["Lakshya"]=Relationship(back_populates="khiladi")
+    lakshyas:list["Lakshya"]=Relationship(back_populates="khiladi",cascade_delete=True)
     pro_user:bool=Field(default=False)
 
 class KhiladiCreate(SQLModel):
@@ -46,4 +47,8 @@ class KhiladiUpdate(SQLModel):
 
 class KhiladiWithLakshyas(KhiladiProfile):
     lakshyas:list[LakshyaPublic]=[]
+
+class VerifyOtp(BaseModel):
+    email:str
+    user_otp:str
 

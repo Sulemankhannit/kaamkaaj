@@ -3,8 +3,10 @@ from typing import Annotated
 from sqlmodel import Session,select
 from core.config import get_session
 from core.security import get_hashed_password,get_current_khiladi
-from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate
-import time
+from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate,VerifyOtp
+from utils.email import send_otp_email
+import time,secrets
+from datetime import datetime,timezone,timedelta
 
 
 router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
@@ -29,15 +31,27 @@ router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
 @router.post("Register/",response_model=KhiladiPublic,status_code=status.HTTP_201_CREATED)
 async def register_khiladi(khiladidata:KhiladiCreate,session:Annotated[Session,Depends(get_session)],
                            bg_tasks:BackgroundTasks):
+    statement=select(Khiladi).where(Khiladi.email==khiladidata.email)
+    existinguser=session.exec(statement).first()
+    if existinguser:
+       raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bhai, ye email pehle se registered hai!"
+        )
+    
     hashed_pw=get_hashed_password(khiladidata.password)
     khiladi_dict=khiladidata.model_dump(exclude={"password"})
-    db_khiladi=Khiladi(**khiladi_dict,hashed_password=hashed_pw) # **(upacks the dictionary fields as The Khiladi database class expects you to pass arguments exactly like this:-
+    
+    cryptic_otp="".join(secrets.choice("0123456789") for _ in range(6))
+    expiration_time=datetime.now(timezone.utc)+timedelta(minutes=10)
+
+    db_khiladi=Khiladi(**khiladi_dict,hashed_password=hashed_pw,otp_code=cryptic_otp,otp_expires_at=expiration_time) # **(upacks the dictionary fields as The Khiladi database class expects you to pass arguments exactly like this:-
                                                                  #Khiladi(username="suleman", email="s@mail.com", hashed_password="...") )
     session.add(db_khiladi)
     session.commit()
     session.refresh(db_khiladi)
 
-    bg_tasks.add_task(send_welcome_email,db_khiladi.email,db_khiladi.username)
+    bg_tasks.add_task(send_otp_email,db_khiladi.email,db_khiladi.otp_code)
     return db_khiladi
 
 
@@ -104,11 +118,41 @@ async def list_khiladi_kaam(khiladi_id:int,city:str,isurgent:bool,search_keyword
     }
 
 
-def send_welcome_email(email: str, username: str):
-    print(f"\n[EMAIL WORKER]  Starting email engine for {username}...")
-    print(f"[EMAIL WORKER]  Opening secure TCP connection to Google SMTP...")
+@router.post("/verify-otp",status_code=status.HTTP_200_OK)
+async def verifyotp(otpData:VerifyOtp,session:Annotated[Session,Depends(get_session)]):
+    statement=select(Khiladi).where(Khiladi.email==otpData.email)
+    db_khiladi=session.exec(statement).first()
+    if not db_khiladi:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bhai ye khiladi email exist nahi krti!"
+        )
+    if db_khiladi.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bhai, tu pehle hi verify kar chuka hai"
+        )
     
-    # We freeze this specific worker thread for 4 seconds
-    time.sleep(4) 
-    
-    print(f"[EMAIL WORKER]  Welcome email successfully delivered to {email}!\n")
+
+    if  otpData.user_otp!=db_khiladi.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Verification code"
+            )
+    currenttime=datetime.now(timezone.utc).replace(tzinfo=None)
+
+    if not db_khiladi.otp_expires_at or currenttime>db_khiladi.otp_expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bhai code ye  expire ho chuka hai, request a new one!"
+        )
+    db_khiladi.is_verified=True
+    db_khiladi.otp_code=None
+    db_khiladi.otp_expires_at=None
+
+    session.add(db_khiladi)
+    session.commit()
+    session.refresh(db_khiladi)
+    return {"message": "Account successfully verified. Welcome to KaamKaaj!"}
+ 
+

@@ -12,6 +12,8 @@ db_password=os.getenv("DB_PASSWORD")
 db_host=os.getenv("HOST")
 db_port=os.getenv("PORT")
 db_name=os.getenv("DB_NAME")
+smtp_email=os.getenv("SMTP_EMAIL")
+smtp_password=os.getenv("SMTP_PASSWORD")
 
 safe_pw=urllib.parse.quote_plus(db_password)
 postgres_url=f"postgresql://{db_user}:{safe_pw}@{db_host}:{db_port}/{db_name}"
