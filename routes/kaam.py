@@ -1,119 +1,188 @@
-from fastapi import Query,Path,status,HTTPException,Body,APIRouter,Depends
+from fastapi import HTTPException,status,APIRouter,Depends,Query
+from sqlmodel import select,SQLModel,Session
 from typing import Annotated
-from schemas.kaam import Kaam_Create,KaamLocation,KaamResolution,KaamUpdate,KammDetailedCreate,difficultylevel,Saboot
+from schemas.kaam import Kaam,KaamCreate,KaamDifficulty,KaamPublic,KaamStatus,KaamSubmit
+from core.config import get_session
+from core.security import get_current_khiladi
+from schemas.khiladi import Khiladi
+from schemas.lakshya import Lakshya
+router=APIRouter( tags=["Kaam"],prefix="/kaam")
 
 
-
-router=APIRouter(
-    prefix="/kaam",
-    tags=["Kaam"]
-    )
-class  KaamPaginationParams:
-     def __init__(self,skip:int=0,limit:int=10):
-         self.skip=skip
-         self.limit=limit
-
-
-def extract_search_query(q: str | None = None):
-    if q:
-        return q.lower()
-    return None
-
-def get_advanced_filters(
-    pagination: Annotated[KaamPaginationParams, Depends()],
-    search_keyword: Annotated[str | None, Depends(extract_search_query)]
-):
-    return {
-        "skip": pagination.skip,
-        "limit": pagination.limit,
-        "search": search_keyword
-    }
-
-@router.get("/difficulty/{level}")
-async def get_difficulty_wise_kaam(level:difficultylevel):
-    if level==difficultylevel.hard:
-        return {"message":"most dangerous quest"}
-    elif level==difficultylevel.medium:
-        return {"message":"medium quest"}
-    else:
-        return {"message":"cake walk quest"}
+@router.post("/lakshya/{lakshya_id}",response_model=KaamPublic,status_code=status.HTTP_201_CREATED)
+async def create_kaam(lakshya_id:int,kaamdata:KaamCreate,current_khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
+    statement=select(Lakshya).where((Lakshya.id==lakshya_id)&(Lakshya.khiladi_id==current_khiladi.id))
+    db_lakshya=session.exec(statement).first()
+    if not db_lakshya:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai yeh lakshya exist nahi karta")
     
-@router.get("/search")
-async def searchKaam(query:Annotated[str|None, Query(min_length=3,max_length=20,pattern="^[a-zA-Z0-9 ]+$")]=None):
-    if query is None:
-        return {"message":"Please provide kaam name for the search "}
-    else:
-        return {"message":f"searching for {query} !"}
+    db_kaam=Kaam.model_validate(kaamdata,update={"lakshya_id":lakshya_id})
+
+    session.add(db_kaam)
+    session.commit()
+    session.refresh(db_kaam)
+    return db_kaam
+
+@router.patch("{kaam_id}/submit",response_model=KaamPublic)
+async def submit_kaam(kaam_id:int,submission_data:KaamSubmit,currentkhiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
+    statement=select(Kaam).join(Lakshya).where((Kaam.id==kaam_id)&(Lakshya.khiladi_id==currentkhiladi.id))
+    db_kaam=session.exec(statement).first()
+    if not db_kaam: 
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai yeh kaam exist nahi karta")
     
-
-@router.get("/filter/tags")
-async def filterkaam(tags:Annotated[list[str]|None,Query(alias="kaam-tags",title="Kaam Tags",description="Filter your Kaam by multiple categories (e.g., study, workout).")]=None):
-    if not tags:
-        return {"message":"provide tags for filtering"}
+    if db_kaam.status==KaamStatus.completed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bhai yeh kaam tum already kar chuke ho")
+    
+    if submission_data.saboot_text:
+        db_kaam.saboot_text=submission_data.saboot_text
+    if submission_data.saboot_image_url:
+        db_kaam.saboot_image_url=submission_data.saboot_image_url
+    
+    if db_kaam.requires_verification:
+        db_kaam.status=KaamStatus.in_review
     else:
-        return {"message":f"filtering kaam with respect to {tags}"}
+        db_kaam.status=KaamStatus.completed
+        currentkhiladi.total_xp+=db_kaam.xp_reward
+        currentkhiladi.level=1+(currentkhiladi.total_xp//1000)
+        session.add(currentkhiladi)
+    session.add(db_kaam)
+    session.commit()
+    session.refresh(db_kaam)
+    return db_kaam
 
+@router.get("/",response_model=list[KaamPublic])
+async def getKaam(currentKhiladi:Annotated[Khiladi,Depends(get_current_khiladi)],
+                 session:Annotated[Session,Depends(get_session)],
+                 lakshya_id:int|None=Query(default=None,description="Filter tasks by a specific Lakshya"),
+                 status_filter:KaamStatus|None=Query(default=None,description=("Filter tasks by status (e.g., pending)"))):
+    
+    statement=select(Kaam).join(Lakshya).where((Lakshya.khiladi_id==currentKhiladi.id))
+    if lakshya_id is not None:
+        statement=statement.where(Kaam.lakshya_id==lakshya_id)
+    if status_filter is not None:
+        statement=statement.where(Kaam.status==status_filter)
 
+    kaams=session.exec(statement).all()
+    return kaams
 
-@router.get("/{kaam_id}")
-async def get_kaam(kaam_id:Annotated[int,Path(ge=1,le=1000)],xp_multiply:Annotated[float,Query(ge=0,le=5.0)]=None):
-    if xp_multiply is None:
-        message="None"
-    else:
-        message=xp_multiply
-    if kaam_id>100:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh kaam exist nahi karta")
-    return {
-        "kaam_id": kaam_id,
-        "kaam_name": f"Defeat the Goblin King (ID: {kaam_id})",
-        "xp_reward_muliplier": message,
-        "status": "Incomplete"
-    }
-
-
-@router.get("/")
-async def list_kaams(filters:Annotated[dict,Depends(get_advanced_filters)]):
-    return {
-        "message":f"Fetching quests from the database...",
-        "filters_applied":filters
-    }
-
-@router.post("/")
-async def create_kaam(kaam:Kaam_Create):
-    print("Server log:quest is being created")
-    return{
-        "message":f"your quest named:{kaam.name} and worth {kaam.xp_reward}xp is created!",
-        "quest_data":kaam
-    }
     
 
-@router.put("/{kaam_id}")
-async def updatekaam(kaam_id:int,kaam_data:KaamUpdate,notify_khiladi:bool=False):
-    return{
-        "message":"Successfully updated",
-        "updated_id":kaam_id,
-        "updated kaam":kaam_data,
-        "notify_khildai":notify_khiladi
-    }
+# from fastapi import Query,Path,status,HTTPException,Body,APIRouter,Depends
+# from typing import Annotated
+# from schemas.kaam import KaamCreate
 
-@router.put("/{kaam_id}/submit")
-async def submit_kaam(
-    kaam_id:int,
-    resolution:KaamResolution,
-    proof:Saboot,
-    rating:Annotated[int,Body(ge=1,le=5)]=None
-    ):
-    return {
-        "message":"Kaam submitted successfully",
-        "submitted_kaam_id":kaam_id,
-        "resolution":resolution,
-        "Saboot":proof
-    }
 
-@router.post("/Advanced/create")
-async def createDetailedKaam(
-    deatiledkaamdata:KammDetailedCreate
-):
- return {"message":"detailed kaam created",
-        "kaam_data":deatiledkaamdata}
+
+# router=APIRouter(
+#     prefix="/kaam",
+#     tags=["Kaam"]
+#     )
+# class  KaamPaginationParams:
+#      def __init__(self,skip:int=0,limit:int=10):
+#          self.skip=skip
+#          self.limit=limit
+
+
+# def extract_search_query(q: str | None = None):
+#     if q:
+#         return q.lower()
+#     return None
+
+# def get_advanced_filters(
+#     pagination: Annotated[KaamPaginationParams, Depends()],
+#     search_keyword: Annotated[str | None, Depends(extract_search_query)]
+# ):
+#     return {
+#         "skip": pagination.skip,
+#         "limit": pagination.limit,
+#         "search": search_keyword
+#     }
+
+# @router.get("/difficulty/{level}")
+# async def get_difficulty_wise_kaam(level:difficultylevel):
+#     if level==difficultylevel.hard:
+#         return {"message":"most dangerous quest"}
+#     elif level==difficultylevel.medium:
+#         return {"message":"medium quest"}
+#     else:
+#         return {"message":"cake walk quest"}
+    
+# @router.get("/search")
+# async def searchKaam(query:Annotated[str|None, Query(min_length=3,max_length=20,pattern="^[a-zA-Z0-9 ]+$")]=None):
+#     if query is None:
+#         return {"message":"Please provide kaam name for the search "}
+#     else:
+#         return {"message":f"searching for {query} !"}
+    
+
+# @router.get("/filter/tags")
+# async def filterkaam(tags:Annotated[list[str]|None,Query(alias="kaam-tags",title="Kaam Tags",description="Filter your Kaam by multiple categories (e.g., study, workout).")]=None):
+#     if not tags:
+#         return {"message":"provide tags for filtering"}
+#     else:
+#         return {"message":f"filtering kaam with respect to {tags}"}
+
+
+
+# @router.get("/{kaam_id}")
+# async def get_kaam(kaam_id:Annotated[int,Path(ge=1,le=1000)],xp_multiply:Annotated[float,Query(ge=0,le=5.0)]=None):
+#     if xp_multiply is None:
+#         message="None"
+#     else:
+#         message=xp_multiply
+#     if kaam_id>100:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai, yeh kaam exist nahi karta")
+#     return {
+#         "kaam_id": kaam_id,
+#         "kaam_name": f"Defeat the Goblin King (ID: {kaam_id})",
+#         "xp_reward_muliplier": message,
+#         "status": "Incomplete"
+#     }
+
+
+# @router.get("/")
+# async def list_kaams(filters:Annotated[dict,Depends(get_advanced_filters)]):
+#     return {
+#         "message":f"Fetching quests from the database...",
+#         "filters_applied":filters
+#     }
+
+# @router.post("/")
+# async def create_kaam(kaam:Kaam_Create):
+#     print("Server log:quest is being created")
+#     return{
+#         "message":f"your quest named:{kaam.name} and worth {kaam.xp_reward}xp is created!",
+#         "quest_data":kaam
+#     }
+    
+
+# @router.put("/{kaam_id}")
+# async def updatekaam(kaam_id:int,kaam_data:KaamUpdate,notify_khiladi:bool=False):
+#     return{
+#         "message":"Successfully updated",
+#         "updated_id":kaam_id,
+#         "updated kaam":kaam_data,
+#         "notify_khildai":notify_khiladi
+#     }
+
+# @router.put("/{kaam_id}/submit")
+# async def submit_kaam(
+#     kaam_id:int,
+#     resolution:KaamResolution,
+#     proof:Saboot,
+#     rating:Annotated[int,Body(ge=1,le=5)]=None
+#     ):
+#     return {
+#         "message":"Kaam submitted successfully",
+#         "submitted_kaam_id":kaam_id,
+#         "resolution":resolution,
+#         "Saboot":proof
+#     }
+
+# @router.post("/Advanced/create")
+# async def createDetailedKaam(
+#     deatiledkaamdata:KammDetailedCreate
+# ):
+#  return {"message":"detailed kaam created",
+#         "kaam_data":deatiledkaamdata}
 

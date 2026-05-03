@@ -1,9 +1,11 @@
-from fastapi import APIRouter,status,Depends,HTTPException
+from fastapi import APIRouter,status,Depends,HTTPException,BackgroundTasks
 from typing import Annotated
 from sqlmodel import Session,select
 from core.config import get_session
 from core.security import get_hashed_password,get_current_khiladi
 from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate
+import time
+
 
 router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
 
@@ -25,7 +27,8 @@ router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
 #[ THIS ABOVE CODE WAS JUST FOR PHASE 1 LEARNING PHASE, WITHOUT THE SECURITY FEATURES]
 
 @router.post("Register/",response_model=KhiladiPublic,status_code=status.HTTP_201_CREATED)
-async def register_khiladi(khiladidata:KhiladiCreate,session:Annotated[Session,Depends(get_session)]):
+async def register_khiladi(khiladidata:KhiladiCreate,session:Annotated[Session,Depends(get_session)],
+                           bg_tasks:BackgroundTasks):
     hashed_pw=get_hashed_password(khiladidata.password)
     khiladi_dict=khiladidata.model_dump(exclude={"password"})
     db_khiladi=Khiladi(**khiladi_dict,hashed_password=hashed_pw) # **(upacks the dictionary fields as The Khiladi database class expects you to pass arguments exactly like this:-
@@ -33,6 +36,8 @@ async def register_khiladi(khiladidata:KhiladiCreate,session:Annotated[Session,D
     session.add(db_khiladi)
     session.commit()
     session.refresh(db_khiladi)
+
+    bg_tasks.add_task(send_welcome_email,db_khiladi.email,db_khiladi.username)
     return db_khiladi
 
 
@@ -97,3 +102,13 @@ async def list_khiladi_kaam(khiladi_id:int,city:str,isurgent:bool,search_keyword
             "search_keyword":search_keyword
         }
     }
+
+
+def send_welcome_email(email: str, username: str):
+    print(f"\n[EMAIL WORKER]  Starting email engine for {username}...")
+    print(f"[EMAIL WORKER]  Opening secure TCP connection to Google SMTP...")
+    
+    # We freeze this specific worker thread for 4 seconds
+    time.sleep(4) 
+    
+    print(f"[EMAIL WORKER]  Welcome email successfully delivered to {email}!\n")

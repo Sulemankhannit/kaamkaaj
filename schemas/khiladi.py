@@ -10,6 +10,7 @@ class Khiladi(SQLModel,table=True):
     hashed_password:str
     email:str
     level:int=Field(default=1)
+    total_xp:int=Field(default=0)
     clan_name:str|None=Field(default=None)
     bio:str|None=Field(default=None)
     lakshyas:list["Lakshya"]=Relationship(back_populates="khiladi")
