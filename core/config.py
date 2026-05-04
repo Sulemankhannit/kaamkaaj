@@ -2,10 +2,18 @@ import os
 from dotenv import load_dotenv
 from sqlmodel import create_engine,Session
 import urllib.parse
+import cloudinary
+import cloudinary.uploader
 load_dotenv()
 
 SECRET_KEY=os.getenv("KAAMKAJ_SECRET_KEY");
-print(SECRET_KEY)
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True # Forces SSL encryption
+)
+
 
 db_user=os.getenv("DB_USER")
 db_password=os.getenv("DB_PASSWORD")

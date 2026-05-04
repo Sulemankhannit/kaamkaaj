@@ -1,11 +1,13 @@
-from fastapi import HTTPException,status,APIRouter,Depends,Query
+from fastapi import HTTPException,status,APIRouter,Depends,Query,Form,UploadFile,File,BackgroundTasks
 from sqlmodel import select,SQLModel,Session
 from typing import Annotated
 from schemas.kaam import Kaam,KaamCreate,KaamDifficulty,KaamPublic,KaamStatus,KaamSubmit
-from core.config import get_session
+from core.config import get_session,engine
 from core.security import get_current_khiladi
 from schemas.khiladi import Khiladi
 from schemas.lakshya import Lakshya
+from utils.ai_reviewer import evaluate_saboot,process_ai_review_background
+import cloudinary,cloudinary.uploader
 router=APIRouter( tags=["Kaam"],prefix="/kaam")
 
 
@@ -23,28 +25,56 @@ async def create_kaam(lakshya_id:int,kaamdata:KaamCreate,current_khiladi:Annotat
     session.refresh(db_kaam)
     return db_kaam
 
-@router.patch("{kaam_id}/submit",response_model=KaamPublic)
-async def submit_kaam(kaam_id:int,submission_data:KaamSubmit,currentkhiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
-    statement=select(Kaam).join(Lakshya).where((Kaam.id==kaam_id)&(Lakshya.khiladi_id==currentkhiladi.id))
-    db_kaam=session.exec(statement).first()
+
+
+
+
+@router.patch("/{kaam_id}/submit", response_model=KaamPublic)
+async def submit_kaam(
+    kaam_id: int,
+    currentkhiladi: Annotated[Khiladi, Depends(get_current_khiladi)],
+    session: Annotated[Session, Depends(get_session)],
+    bg_tasks:BackgroundTasks,
+    # Form and File dependencies
+    saboot_text: str | None = Form(default=None),
+    saboot_image: UploadFile | None = File(default=None)
+):
+    
+    statement = select(Kaam).join(Lakshya).where((Kaam.id == kaam_id) & (Lakshya.khiladi_id == currentkhiladi.id))
+    db_kaam = session.exec(statement).first()
+    
     if not db_kaam: 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Bhai yeh kaam exist nahi karta")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bhai yeh kaam exist nahi karta")
     
-    if db_kaam.status==KaamStatus.completed:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Bhai yeh kaam tum already kar chuke ho")
+    if db_kaam.status == KaamStatus.completed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bhai yeh kaam tum already kar chuke ho")
     
-    if submission_data.saboot_text:
-        db_kaam.saboot_text=submission_data.saboot_text
-    if submission_data.saboot_image_url:
-        db_kaam.saboot_image_url=submission_data.saboot_image_url
     
+    if saboot_text:
+        db_kaam.saboot_text = saboot_text
+        
+    
+    if saboot_image:
+        if not saboot_image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Bhai, sirf images allowed hain!")
+        try:
+            # Upload to cloud 
+            result = cloudinary.uploader.upload(saboot_image.file, folder="kaamkaaj_saboots")
+            # Save the database 
+            db_kaam.saboot_image_url = result.get("secure_url")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Cloud upload failed. Try again.")
+    
+
     if db_kaam.requires_verification:
-        db_kaam.status=KaamStatus.in_review
+        db_kaam.status = KaamStatus.in_review
+        bg_tasks.add_task(process_ai_review_background,db_kaam.id,currentkhiladi.id)
     else:
-        db_kaam.status=KaamStatus.completed
-        currentkhiladi.total_xp+=db_kaam.xp_reward
-        currentkhiladi.level=1+(currentkhiladi.total_xp//1000)
+        db_kaam.status = KaamStatus.completed
+        currentkhiladi.total_xp += db_kaam.xp_reward
+        currentkhiladi.level = 1 + (currentkhiladi.total_xp // 1000)
         session.add(currentkhiladi)
+        
     session.add(db_kaam)
     session.commit()
     session.refresh(db_kaam)
