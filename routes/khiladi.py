@@ -86,8 +86,12 @@ async def get_my_profile(
 async def update_user_profile(khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],khiladi_new_data:KhiladiUpdate,
                               session:Annotated[Session,Depends(get_session)]):
     
-    
     data_to_be_updated=khiladi_new_data.model_dump(exclude_unset=True)
+    if "password" in data_to_be_updated:
+        user_pw=data_to_be_updated.pop("password")
+        hashedpw=get_hashed_password(user_pw)
+        data_to_be_updated.update({"hashed_password":hashedpw})
+    
     khiladi.sqlmodel_update(data_to_be_updated)
     session.add(khiladi)
     session.commit()
@@ -100,23 +104,6 @@ async def deleteKhiladi(khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],
     session.commit()
     return {"message":f"permananently deleted"}
     
-
-@router.get("/{khiladi_id}/kaam")
-async def list_khiladi_kaam(khiladi_id:int,city:str,isurgent:bool,search_keyword:str|None=None):
-    response_message=f"getting kaam of khiladi with id :{khiladi_id} in {city} "
-    if isurgent:
-        response_message+=" WARNING: Bhai, jaldi karo! (Prioritizing URGENT Kaam!)"
-    if search_keyword:
-        response_message+=f" filtering the kaams with {search_keyword}"
-    return{
-        "message":response_message,
-        "filters_applied":{
-            "city":city,
-            "isurgent":isurgent,
-            "search_keyword":search_keyword
-        }
-    }
-
 
 @router.post("/verify-otp",status_code=status.HTTP_200_OK)
 async def verifyotp(otpData:VerifyOtp,session:Annotated[Session,Depends(get_session)]):
