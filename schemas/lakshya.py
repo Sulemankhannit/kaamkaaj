@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel,Field,Relationship,Session,select
 from typing import List,TYPE_CHECKING
-
+from datetime import datetime
 
 if TYPE_CHECKING:
     from schemas.kaam import Kaam
@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 class LakshyaCreate(SQLModel):
     title:str
     description:str|None=None
+    deadline:datetime
+
 
 class LakshyaPublic(SQLModel):
     id:int
@@ -19,6 +21,8 @@ class Lakshya(SQLModel,table=True):
     id:int|None=Field(default=None,primary_key=True)
     title:str
     description:str|None=Field(default=None)
+    is_accomplished:bool=Field(default=False)
+    deadline: datetime | None = Field(default=None)
     khiladi_id:int=Field(foreign_key="khiladi.id")
     kaams:list["Kaam"]=Relationship(back_populates="lakshya",cascade_delete=True)
     khiladi:"Khiladi"=Relationship(back_populates="lakshyas")

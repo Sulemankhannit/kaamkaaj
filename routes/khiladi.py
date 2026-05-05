@@ -1,13 +1,13 @@
-from fastapi import APIRouter,status,Depends,HTTPException,BackgroundTasks
+from fastapi import APIRouter,status,Depends,HTTPException,BackgroundTasks,Request
 from typing import Annotated
 from sqlmodel import Session,select
 from core.config import get_session
-from core.security import get_hashed_password,get_current_khiladi
-from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate,VerifyOtp
+from core.security import get_hashed_password,get_current_khiladi,check_password
+from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate,VerifyOtp,ResendOtpRequest,DeleteProfile
 from utils.email import send_otp_email
 import time,secrets
 from datetime import datetime,timezone,timedelta
-
+from core.limiter import limiter
 
 router=APIRouter(prefix="/khiladi",tags=["Khiladi"])
 
@@ -52,7 +52,9 @@ async def register_khiladi(khiladidata:KhiladiCreate,session:Annotated[Session,D
     session.refresh(db_khiladi)
 
     bg_tasks.add_task(send_otp_email,db_khiladi.email,db_khiladi.otp_code)
+    
     return db_khiladi
+
 
 
 
@@ -99,7 +101,9 @@ async def update_user_profile(khiladi:Annotated[Khiladi,Depends(get_current_khil
     return khiladi
 
 @router.delete("/me/deleteProfile")
-async def deleteKhiladi(khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
+async def deleteKhiladi(user_password:DeleteProfile,khiladi:Annotated[Khiladi,Depends(get_current_khiladi)],session:Annotated[Session,Depends(get_session)]):
+    if not check_password(user_password.password,khiladi.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Galat password, Account can't be deleted")
     session.delete(khiladi)
     session.commit()
     return {"message":f"permananently deleted"}
@@ -143,3 +147,68 @@ async def verifyotp(otpData:VerifyOtp,session:Annotated[Session,Depends(get_sess
     return {"message": "Account successfully verified. Welcome to KaamKaaj!"}
  
 
+
+
+
+
+@router.post("/resendOtp/")
+@limiter.limit("3/minute")
+async def resend_otp(
+    request:Request,
+    otprequest: ResendOtpRequest, 
+    bg_tasks: BackgroundTasks, 
+    session: Annotated[Session, Depends(get_session)]
+):
+    
+    statement = select(Khiladi).where(Khiladi.email == otprequest.email)
+    db_khiladi = session.exec(statement).first()
+    
+    if not db_khiladi:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bhai ye khiladi email exist nahi karti!"
+        )
+        
+    if db_khiladi.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bhai, tu pehle hi verify kar chuka hai"
+        )
+    
+    # 2. Anti-Spam (Fixed Timezone & Math Logic)
+    # We use naive UTC time consistently to avoid timezone offset crashes
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    if db_khiladi.otp_expires_at:
+        # Step A: Strip timezone info from DB object just in case SQLModel added it back
+        db_expiry = db_khiladi.otp_expires_at.replace(tzinfo=None)
+        
+        # Step B: Reverse engineer the exact moment the OTP was created
+        generation_time = db_expiry - timedelta(minutes=10)
+        
+        # Step C: Calculate how many seconds have passed since they clicked the button
+        seconds_passed = (now - generation_time).total_seconds()
+        
+        # Step D: If it has been less than 60 seconds, trigger the shield.
+        # (We also check > 0 to ensure no weird negative time travel bugs)
+        if 0 <= seconds_passed < 60:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Thoda sabar kar bhai. Please wait {int(60 - seconds_passed)} seconds before requesting a new OTP."
+            )
+
+    # 3. Generate New OTP
+    new_otp = "".join(secrets.choice("0123456789") for _ in range(6))
+    
+    # IMPORTANT: Save the new expiry exactly the same way (Naive UTC)
+    db_khiladi.otp_code = new_otp
+    db_khiladi.otp_expires_at = now + timedelta(minutes=10)
+
+    session.add(db_khiladi)
+    session.commit()
+    session.refresh(db_khiladi)
+    
+    
+    bg_tasks.add_task(send_otp_email, db_khiladi.email, db_khiladi.otp_code)
+    
+    return {"message": "Naya OTP bhej diya gaya hai. Apna email check karo!"}

@@ -56,6 +56,7 @@ def get_current_khiladi(
     except InvalidTokenError:
         # If the math fails, or the token is expired, kick them out immediately.
         raise credentials_exception
+    
 
     # 4. Fetch the Khiladi from PostgreSQL using the verified username
     statement = select(Khiladi).where(Khiladi.username == username)
@@ -63,6 +64,9 @@ def get_current_khiladi(
     
     if khiladi is None:
         raise credentials_exception
+    
+    if not  khiladi.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bhai, pehle apna email verify kar! Use /resendOtp if you need a new code.")
         
     # 5. Hand the full database object over to your route!
     return khiladi

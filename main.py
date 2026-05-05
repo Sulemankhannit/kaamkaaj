@@ -1,14 +1,23 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from routes import khiladi,kaam,lakshya,auth
+from routes import khiladi,kaam,lakshya,auth,dashboard
 from sqlmodel import SQLModel
 from core.config import engine
 from schemas.khiladi import Khiladi
 from schemas.kaam import Kaam
 from schemas.lakshya import Lakshya
+from core.limiter import Limiter,limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+
 
 app=FastAPI()
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 @app.on_event("startup")
 def on_startup():
     print("compiling database tables")
@@ -29,6 +38,7 @@ app.include_router(khiladi.router)
 app.include_router(kaam.router)
 app.include_router(lakshya.router)
 app.include_router(auth.router)
+app.include_router(dashboard.router)
 @app.get("/")
 async def welcome_to_kaamkaj():
     return{

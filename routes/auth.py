@@ -27,7 +27,8 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
+    if not db_khiladi.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bhai, pehle apna email verify kar! Use /resendOtp if you need a new code.")
     # 3. The password matched! Mint the Token.
     # We only put non-sensitive identifiers in the payload.
     jwt_payload = {"sub": db_khiladi.username, "khiladi_id": db_khiladi.id}

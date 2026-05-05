@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel,Field,Relationship
 from typing import List,TYPE_CHECKING
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel,EmailStr
 from schemas.lakshya import LakshyaPublic
 if TYPE_CHECKING:
     from schemas.lakshya import Lakshya
@@ -43,7 +43,8 @@ class KhiladiUpdate(SQLModel):
     email:str|None=None
     clan_name:str|None=None
     bio:str|None=None
-
+class DeleteProfile(BaseModel):
+    password:str
 
 class KhiladiWithLakshyas(KhiladiProfile):
     lakshyas:list[LakshyaPublic]=[]
@@ -51,4 +52,6 @@ class KhiladiWithLakshyas(KhiladiProfile):
 class VerifyOtp(BaseModel):
     email:str
     user_otp:str
+class ResendOtpRequest(BaseModel):
+    email: EmailStr
 
