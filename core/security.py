@@ -10,7 +10,7 @@ from jwt.exceptions import InvalidTokenError
 
 oauth2_scheme=OAuth2PasswordBearer(tokenUrl="login")
 
-# In production, NEVER hardcode this. It should be in your .env file!
+
 SECRET_KEY = "KaamKaaj_Super_Secret_Key_For_Suleman_Only_Do_Not_Share"
 ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=60*24*7 #7 days expiry
@@ -33,7 +33,7 @@ def create_access_token(data:dict)->str:
     return encoded_jwt
 
 def get_current_khiladi(
-    # 1. FastAPI intercepts the packet and grabs the token string using the scheme we built
+    # 1. FastAPI intercepts the packet and grabs the token string using the scheme 
     token: str = Depends(oauth2_scheme), 
     session: Session = Depends(get_session)
 ) -> Khiladi:
@@ -54,11 +54,11 @@ def get_current_khiladi(
             raise credentials_exception
             
     except InvalidTokenError:
-        # If the math fails, or the token is expired, kick them out immediately.
+        # If the math fails, or the token is expired, kick out immediately.
         raise credentials_exception
     
 
-    # 4. Fetch the Khiladi from PostgreSQL using the verified username
+    # 4. Fetch the Khiladi 
     statement = select(Khiladi).where(Khiladi.username == username)
     khiladi = session.exec(statement).first()
     
@@ -68,5 +68,5 @@ def get_current_khiladi(
     if not  khiladi.is_verified:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bhai, pehle apna email verify kar! Use /resendOtp if you need a new code.")
         
-    # 5. Hand the full database object over to your route!
+    # 5. Hand the full database object 
     return khiladi
