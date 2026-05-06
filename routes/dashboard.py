@@ -6,17 +6,14 @@ from schemas.khiladi import Khiladi
 from schemas.lakshya import Lakshya
 from schemas.dashboard import DashboardKaamResponse,DashboardLakshyaResponse,DashboardResponse
 router=APIRouter(tags=["Dashboard"])
-# (Assuming you imported Khiladi, Lakshya, Kaam, get_session, get_current_khiladi)
-# (Assuming you imported your new Dashboard schemas)
+
 
 @router.get("/dashboard", response_model=DashboardResponse)
 async def get_khiladi_dashboard(
     current_khiladi: Khiladi = Depends(get_current_khiladi),
     session: Session = Depends(get_session)
 ):
-    # ==========================================
-    # 1. THE ENGINE (The N+1 Killer)
-    # ==========================================
+   
     statement = (
         select(Khiladi)
         .where(Khiladi.id == current_khiladi.id)
@@ -26,9 +23,7 @@ async def get_khiladi_dashboard(
     )
     db_khiladi = session.exec(statement).first()
 
-    # ==========================================
-    # 2. THE ASSEMBLY (Russian Nesting Dolls)
-    # ==========================================
+   
     
     lakshyas_list = []
     
@@ -36,7 +31,7 @@ async def get_khiladi_dashboard(
     for lak in db_khiladi.lakshyas:
         
         kaams_list = []
-        # Loop through the eagerly loaded Kaams inside this specific Lakshya
+       
         for kaam in lak.kaams:
             kaams_list.append(
                 DashboardKaamResponse(
@@ -50,7 +45,7 @@ async def get_khiladi_dashboard(
                 )
             )
             
-        # Assemble the Lakshya and attach the list of Kaams
+       
         lakshyas_list.append(
             DashboardLakshyaResponse(
                 id=lak.id,
@@ -62,7 +57,7 @@ async def get_khiladi_dashboard(
             )
         )
 
-    # Assemble the final Top-Level Dashboard
+    
     dashboard = DashboardResponse(
         khiladi_id=db_khiladi.id,
         name=db_khiladi.username,
