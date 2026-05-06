@@ -21,7 +21,7 @@ async def login_for_access_token(
 
     # 2. Verify existence AND password match
     if not db_khiladi or not check_password(form_data.password, db_khiladi.hashed_password):
-        # We give a generic error. NEVER tell a hacker "Username not found" vs "Wrong password".
+        # We give a generic error.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -29,12 +29,11 @@ async def login_for_access_token(
         )
     if not db_khiladi.is_verified:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Bhai, pehle apna email verify kar! Use /resendOtp if you need a new code.")
-    # 3. The password matched! Mint the Token.
-    # We only put non-sensitive identifiers in the payload.
+    
     jwt_payload = {"sub": db_khiladi.username, "khiladi_id": db_khiladi.id}
     token = create_access_token(data=jwt_payload)
 
-    # 4. Return the exact JSON structure demanded by the OAuth2 global specification
+   
     return {
         "access_token": token, 
         "token_type": "bearer"
