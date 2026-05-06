@@ -27,7 +27,7 @@ async def get_khiladi_dashboard(
     
     lakshyas_list = []
     
-    # Loop through the eagerly loaded Lakshyas
+    
     for lak in db_khiladi.lakshyas:
         
         kaams_list = []
@@ -62,7 +62,7 @@ async def get_khiladi_dashboard(
         khiladi_id=db_khiladi.id,
         name=db_khiladi.username,
         level=db_khiladi.level,
-        current_xp=db_khiladi.total_xp, # Make sure this exactly matches your DB Khiladi column name! (e.g., xp or current_xp)
+        current_xp=db_khiladi.total_xp,
         lakshyas=lakshyas_list
     )
 
