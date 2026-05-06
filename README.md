@@ -1,25 +1,29 @@
-# KaamKaaj ⚔️
+# KaamKaaj | The AI Accountability Engine
 
-**KaamKaaj** is a gamified task management API where productivity meets RPG mechanics. Built with FastAPI and PostgreSQL, it transforms your daily goals (`Lakshya`) and tasks (`Kaam`) into quests where users (`Khiladis`) can earn XP, level up, and even have their proof of work (`Saboot`) verified by an AI Reviewer.
+**KaamKaaj** isn't just another gamified task manager—it's an **unforgiving Accountability Engine**. 
 
-##  Features
+Built with FastAPI and PostgreSQL, KaamKaaj introduces RPG mechanics where you only get rewarded if you actually put in the work. You can set your goals (`Lakshya`) and list your tasks (`Kaam`), but you don't earn XP just by checking a box. If a task requires proof, you must submit a **Saboot** (image or text evidence), which is strictly judged and verified by our **AI Reviewer**. No cutting corners, no cheating the system.
 
-- **Gamified Productivity**: Complete tasks to earn XP and level up your Khiladi.
-- **Goals & Quests System**: Organize tasks under overarching goals (Lakshyas).
-- **AI Verification**: Tasks requiring verification are automatically reviewed by an AI based on text or image proofs (Saboot).
-- **Secure Authentication**: JWT-based authentication, bcrypt password hashing, and email OTP verification.
-- **Rate Limiting**: Built-in rate limiting using `slowapi` to prevent abuse.
-- **Cloud Storage Integration**: Direct upload of image proofs to Cloudinary.
+##  The Core Hook: AI Accountability
+
+- **No Saboot, No XP**: You only get points for the tasks you promised to prove. A simple checklist won't cut it.
+- **Strict AI Judging**: Your submitted proof (whether it's an uploaded image or a text description) is sent to an AI background worker. The AI rigorously evaluates your Saboot against your task description to determine if the task was genuinely completed.
+- **Earn Your Level**: If the AI accepts your proof, your Kaam is marked complete and you earn your XP. If it rejects it, you get nothing. 
+
+##  Gamified Productivity
+
+- **Khiladi Profile**: Start as a level 1 adventurer and grind your way to the top by earning XP from verified tasks.
+- **Lakshya & Kaam**: Group your daily grinds (`Kaam`) under epic overarching goals (`Lakshya`).
+- **Secure Authentication**: JWT-based authentication, bcrypt password hashing, and mandatory OTP email verification to keep your Khiladi account secure.
 
 ##  Tech Stack
 
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/)
+- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Fast, asynchronous Python API)
 - **Database ORM**: [SQLModel](https://sqlmodel.tiangolo.com/) & SQLAlchemy
-- **Database**: PostgreSQL
-- **Migrations**: Alembic
-- **Cloud Storage**: [Cloudinary](https://cloudinary.com/) (for image uploads)
-- **Security**: JWT, Passlib (bcrypt)
-- **Rate Limiting**: SlowAPI
+- **Database**: PostgreSQL (Migrations handled by Alembic)
+- **Cloud Storage**: [Cloudinary](https://cloudinary.com/) (For storing your Saboot images)
+- **Security & Rate Limiting**: Passlib (bcrypt), JWT, and SlowAPI
+- **AI Worker**: Background task execution for the AI Reviewer
 
 ##  Project Structure
 
@@ -34,7 +38,7 @@ kaamkaaj/
 └── requirements.txt       # Project dependencies
 ```
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -112,7 +116,7 @@ Interactive Swagger Documentation: `http://127.0.0.1:8000/docs`
 - **`/login`**: OAuth2 login to receive JWT access tokens.
 - **`/dashboard`**: Unified overview of the Khiladi's progress, XP, and active Lakshyas.
 - **`/lakshya`**: CRUD operations for top-level goals.
-- **`/kaam`**: Quests creation, filtering, and submissions. Supports uploading proof (image/text) which triggers background AI review if verification is required.
+- **`/kaam`**: Quests creation, filtering, and submissions. **The AI Engine lives here.** Upload your `Saboot` to trigger a background AI review. The task only resolves if the AI accepts your proof.
 
 ---
-*Welcome to the tavern, Adventurer. Your journey begins here!*
+*Welcome to the tavern, Adventurer. Your journey begins here, but remember: the AI is watching.*
