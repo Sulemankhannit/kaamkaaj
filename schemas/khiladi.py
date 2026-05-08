@@ -31,6 +31,8 @@ class KhiladiPublic(SQLModel):
     username:str
     email:str
     level:int
+    clan_name:str|None=None
+    bio:str|None=None
 
 class KhiladiProfile(SQLModel):
     username:str

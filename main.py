@@ -10,10 +10,20 @@ from schemas.lakshya import Lakshya
 from core.limiter import Limiter,limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 
 app=FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Allow your Next.js frontend
+    allow_credentials=True,
+    allow_methods=["*"], # Allow all types of requests (GET, POST, PATCH, etc.)
+    allow_headers=["*"], # Allow all headers (like Authorization for your JWTs)
+)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

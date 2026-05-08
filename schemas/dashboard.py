@@ -10,7 +10,7 @@ class DashboardKaamResponse(BaseModel):
     status: str
     xp_reward: int
     requires_verification: bool
-    deadline:datetime
+    deadline:datetime|None=None
 
 # 2. The Middle Layer: The Goal (Contains a list of Tasks)
 class DashboardLakshyaResponse(BaseModel):
@@ -27,4 +27,4 @@ class DashboardResponse(BaseModel):
     name: str
     level: int
     current_xp: int
-    lakshyas: List[DashboardLakshyaResponse] = [] # Notice the nested list!
+    lakshyas: List[DashboardLakshyaResponse] = [] 
