@@ -1,122 +1,75 @@
-# KaamKaaj | The AI Accountability Engine
+# 🗡️ KaamKaaj: The Accountability Engine
 
-**KaamKaaj** isn't just another gamified task manager—it's an **unforgiving Accountability Engine**. 
+> **To-do lists are broken. They rely on willpower. KaamKaaj relies on proof.**
 
-Built with FastAPI and PostgreSQL, KaamKaaj introduces RPG mechanics where you only get rewarded if you actually put in the work. You can set your goals (`Lakshya`) and list your tasks (`Kaam`), but you don't earn XP just by checking a box. If a task requires proof, you must submit a **Saboot** (image or text evidence), which is strictly judged and verified by our **AI Reviewer**. No cutting corners, no cheating the system.
+**KaamKaaj is a hardcore, gamified productivity application that forces accountability. Users cannot simply check a box to complete a task; they must submit photographic evidence ("Saboot") which is critically evaluated by an AI Game Master before XP is awarded.**
 
-##  The Core Hook: AI Accountability
 
-- **No Saboot, No XP**: You only get points for the tasks you promised to prove. A simple checklist won't cut it.
-- **Strict AI Judging**: Your submitted proof (whether it's an uploaded image or a text description) is sent to an AI background worker. The AI rigorously evaluates your Saboot against your task description to determine if the task was genuinely completed.
-- **Earn Your Level**: If the AI accepts your proof, your Kaam is marked complete and you earn your XP. If it rejects it, you get nothing. 
 
-##  Gamified Productivity
-
-- **Khiladi Profile**: Start as a level 1 adventurer and grind your way to the top by earning XP from verified tasks.
-- **Lakshya & Kaam**: Group your daily grinds (`Kaam`) under epic overarching goals (`Lakshya`).
-- **Secure Authentication**: JWT-based authentication, bcrypt password hashing, and mandatory OTP email verification to keep your Khiladi account secure.
-
-##  Tech Stack
-
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Fast, asynchronous Python API)
-- **Database ORM**: [SQLModel](https://sqlmodel.tiangolo.com/) & SQLAlchemy
-- **Database**: PostgreSQL (Migrations handled by Alembic)
-- **Cloud Storage**: [Cloudinary](https://cloudinary.com/) (For storing your Saboot images)
-- **Security & Rate Limiting**: Passlib (bcrypt), JWT, and SlowAPI
-- **AI Worker**: Background task execution for the AI Reviewer
-
-##  Project Structure
-
-```text
-kaamkaaj/
-├── core/                  # Core configurations, security, and rate limiting
-├── routes/                # API Endpoints (Auth, Khiladi, Lakshya, Kaam, Dashboard)
-├── schemas/               # Pydantic/SQLModel models for data validation
-├── utils/                 # Utility functions (AI Reviewer, Email sending)
-├── alembic/               # Database migrations
-├── main.py                # FastAPI application entry point
-└── requirements.txt       # Project dependencies
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- PostgreSQL server running
-- Cloudinary Account
-- SMTP Email Account (for OTPs)
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd kaamkaaj_copy
-```
-
-### 2. Set up the virtual environment
-
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Environment Variables
-
-Create a `.env` file in the root directory and add the following keys:
-
-```ini
-# Security
-KAAMKAJ_SECRET_KEY=your_super_secret_jwt_key
-
-# Database
-DB_USER=postgres
-DB_PASSWORD=your_db_password
-HOST=localhost
-PORT=5432
-DB_NAME=kaamkaaj
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Email / SMTP
-SMTP_EMAIL=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
-```
-
-### 5. Run Database Migrations
-
-```bash
-alembic upgrade head
-```
-
-### 6. Run the Application
-
-```bash
-uvicorn main:app --reload
-```
-
-The API will be available at: `http://127.0.0.1:8000`
-Interactive Swagger Documentation: `http://127.0.0.1:8000/docs`
-
-## API Overview
-
-- **`/khiladi`**: Player registration, OTP email verification, and profile management.
-- **`/login`**: OAuth2 login to receive JWT access tokens.
-- **`/dashboard`**: Unified overview of the Khiladi's progress, XP, and active Lakshyas.
-- **`/lakshya`**: CRUD operations for top-level goals.
-- **`/kaam`**: Quests creation, filtering, and submissions. **The AI Engine lives here.** Upload your `Saboot` to trigger a background AI review. The task only resolves if the AI accepts your proof.
+🔗 **Enter the Arena (Live App):** [kaamkaaj-sooty.vercel.app](https://kaamkaaj-sooty.vercel.app)
+*(Note: Experience the system live. Cloning/local setup is restricted to maintain the integrity of the Game Master).*
 
 ---
-*Welcome to the tavern, Adventurer. Your journey begins here, but remember: the AI is watching.*
+
+## ⚖️ Why KaamKaaj? (The Willpower Gap)
+
+Most productivity apps are just digital lists. They trust you to be honest. But in the heat of procrastination, honesty is the first casualty. **KaamKaaj removes the option to lie.** 
+
+By requiring visual proof, it creates a "Hardcore Mode" for your life. It turns mundane tasks into high-stakes quests where your progress is verified by an impartial AI judge. Stop managing lists and start conquering goals.
+
+---
+
+## 🎯 The Core Loop (How it works)
+
+1.  **Forge a Lakshya (Quest):** Set a high-level goal (e.g., "Master DSA").
+2.  **Assign a Kaam (Task):** Break it down into actionable steps (e.g., "Solve LC 3912").
+3.  **Submit the Saboot (Proof):** Upload an image of your completed work.
+4.  **Face the Game Master (AI Evaluation):** The backend background worker sends the image and task description to Google's Gemini AI. The AI acts as a strict judge.
+5.  **Level Up or Fail:** If the proof is valid, the AI grants approval and you earn XP. If it's weak or irrelevant, the AI brutally rejects the submission.
+
+---
+
+## 🛠️ The FARP Stack Architecture
+
+This project is built on the modern **FARP Stack**, prioritizing type-safety, rapid API development, and fluid UI interactions.
+
+### Frontend (The Face)
+*   **Framework:** Next.js 15 (App Router) & React 19
+*   **Styling:** Tailwind CSS 4 & Shadcn/ui (Dark Mode RPG Aesthetic)
+*   **State Management:** Zustand (Auth persistence) & TanStack React Query 5 (Smart polling & caching)
+*   **Animations:** Framer Motion & CSS-Animate
+
+### Backend (The Brain)
+*   **Framework:** FastAPI (Python)
+*   **Database & ORM:** PostgreSQL (hosted on Neon.tech) via SQLModel (SQLAlchemy + Pydantic)
+*   **Authentication:** OAuth2 with JWT (JSON Web Tokens) & OTP-based Email Verification
+*   **Storage:** Cloudinary API (Multipart form-data image streaming)
+*   **AI Engine:** Google Gemini API integrated via asynchronous background tasks.
+
+---
+
+## 🚀 Engineering Highlights & Problem Solving
+
+### 1. The "Empty String" Payload Trap
+**Challenge:** Next.js forms natively send empty strings (`""`) for untouched optional fields, which caused FastAPI's `exclude_unset=True` to wipe existing database columns during `PATCH` profile updates.
+**Solution:** Engineered a frontend payload sanitizer utilizing `Object.entries` to filter out nulls and empty strings before transmission, ensuring non-destructive data hydration.
+
+### 2. Automated Dopamine Loop (Smart Polling)
+**Challenge:** AI image evaluation takes 2-4 seconds. Forcing the user to manually refresh the page to see if they leveled up breaks the psychological gamification loop.
+**Solution:** Implemented dynamic React Query polling. The frontend acts as a **radar**—pinging the server every 2 seconds *only* when a task status is `in_review`. The millisecond the AI finishes, the UI captures the `completed` state, stops polling, and triggers cinematic status transitions.
+
+### 3. The Hybrid Edge-Tunnel Deployment Bypass
+**Challenge:** Standard free-tier cloud platforms institute strict credit card verification walls, blocking immediate backend deployment for developers without international cards.
+**Solution:** Engineered a reverse-proxy tunnel using Cloudflare (`cloudflared`). The Next.js frontend lives globally on Vercel and routes authenticated HTTPS requests directly through the tunnel to the local FastAPI instance and Neon Cloud DB.
+
+---
+
+## 🧪 Try it Out (Demo Credentials)
+
+To evaluate the system without registering, use the following recruiter credentials:
+*   **Username:** `demo` (Or awaken your "Khiladi" and start the grind!)
+*   **Password:** `demo@kaam123` 
+
+
+
+**Built with ⚔️ by [Suleman Khan](https://github.com/Sulemankhannit)**
