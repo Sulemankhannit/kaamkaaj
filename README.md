@@ -84,7 +84,7 @@ This project is built on the modern **FARP Stack**, prioritizing type-safety, ra
 ## 🧪 Try it Out (Demo Credentials)
 
 To evaluate the system without registering, use the following credentials:
-*   **Username:** `suleman.miles` (Or awaken your "Khiladi" and start the grind!)
-*   **Password:** `recruiter123` 
+*   **Username:** `demo` (Or awaken your "Khiladi" and start the grind!)
+*   **Password:** `demo@kaam123` 
 
 **Built with ⚔️ by [Suleman Khan](https://github.com/Sulemankhannit)**
