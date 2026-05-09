@@ -4,10 +4,27 @@
 
 **KaamKaaj is a hardcore, gamified productivity application that forces accountability. Users cannot simply check a box to complete a task; they must submit photographic evidence ("Saboot") which is critically evaluated by an AI Game Master before XP is awarded.**
 
-
+---
 
 🔗 **Enter the Arena (Live App):** [kaamkaaj-sooty.vercel.app](https://kaamkaaj-sooty.vercel.app)
-*(Note: Experience the system live. Cloning/local setup is restricted to maintain the integrity of the Game Master).*
+
+---
+
+## 📲 The PWA Experience: Your Life, Installable
+
+KaamKaaj isn't just a website; it's a **Progressive Web App (PWA)** designed to feel like a native mobile application. Stop fumbling with browser tabs and bring the grind directly to your home screen.
+
+### ⚡ Why Install KaamKaaj?
+*   **Native-App Feel:** No URL bars, no browser chrome—just pure, immersive RPG-style productivity.
+*   **Instant Access:** Launch KaamKaaj directly from your app drawer or home screen with a single tap.
+*   **Optimized for Mobile:** Every button, card, and interaction is engineered for a tactile, mobile-first experience.
+*   **Dopamine-Hit Pushes:** Receive real-time feedback from the Game Master as if it were a native system notification.
+
+**How to Install:**
+1.  Open [KaamKaaj](https://kaamkaaj-sooty.vercel.app) in your mobile browser (Chrome/Safari).
+2.  Tap the **Menu** or **Share** button.
+3.  Select **"Add to Home Screen"** or **"Install App"**.
+4.  ⚔️ **Begin your journey.**
 
 ---
 
@@ -37,7 +54,7 @@ This project is built on the modern **FARP Stack**, prioritizing type-safety, ra
 *   **Framework:** Next.js 15 (App Router) & React 19
 *   **Styling:** Tailwind CSS 4 & Shadcn/ui (Dark Mode RPG Aesthetic)
 *   **State Management:** Zustand (Auth persistence) & TanStack React Query 5 (Smart polling & caching)
-*   **Animations:** Framer Motion & CSS-Animate
+*   **PWA Core:** Next-PWA with specialized manifest and service worker configuration for high performance.
 
 ### Backend (The Brain)
 *   **Framework:** FastAPI (Python)
@@ -66,10 +83,8 @@ This project is built on the modern **FARP Stack**, prioritizing type-safety, ra
 
 ## 🧪 Try it Out (Demo Credentials)
 
-To evaluate the system without registering, use the following recruiter credentials:
-*   **Username:** `demo` (Or awaken your "Khiladi" and start the grind!)
-*   **Password:** `demo@kaam123` 
-
-
+To evaluate the system without registering, use the following credentials:
+*   **Username:** `suleman.miles` (Or awaken your "Khiladi" and start the grind!)
+*   **Password:** `recruiter123` 
 
 **Built with ⚔️ by [Suleman Khan](https://github.com/Sulemankhannit)**
