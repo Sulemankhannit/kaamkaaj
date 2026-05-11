@@ -17,12 +17,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app=FastAPI()
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:3000"], # Allow your Next.js frontend
+#     allow_credentials=True,
+#     allow_methods=["*"], # Allow all types of requests (GET, POST, PATCH, etc.)
+#     allow_headers=["*"], # Allow all headers (like Authorization for your JWTs)
+# )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Allow your Next.js frontend
+    allow_origins=["*"],  # Allows Vercel and Cloudflare to talk to your laptop
     allow_credentials=True,
-    allow_methods=["*"], # Allow all types of requests (GET, POST, PATCH, etc.)
-    allow_headers=["*"], # Allow all headers (like Authorization for your JWTs)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.state.limiter = limiter
