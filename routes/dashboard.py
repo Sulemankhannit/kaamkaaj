@@ -7,6 +7,21 @@ from schemas.lakshya import Lakshya
 from schemas.dashboard import DashboardKaamResponse,DashboardLakshyaResponse,DashboardResponse
 router=APIRouter(tags=["Dashboard"])
 
+XP_PER_LEVEL = 1000
+
+def get_shadow_realm_status(total_xp: int) -> tuple[bool, str | None]:
+    """Check if user is in the Shadow Realm (negative XP)."""
+    if total_xp < 0:
+        return True, f"You have fallen into the Shadow Realm with {abs(total_xp)} XP in debt. Complete tasks to escape!"
+    return False, None
+
+def get_xp_progress(total_xp: int) -> tuple[int, int]:
+    """Get XP progress within current level and XP needed for next level."""
+    if total_xp < 0:
+        return 0, XP_PER_LEVEL
+    current_level_xp = total_xp % XP_PER_LEVEL
+    xp_needed = XP_PER_LEVEL - current_level_xp
+    return current_level_xp, xp_needed
 
 @router.get("/dashboard", response_model=DashboardResponse)
 async def get_khiladi_dashboard(
@@ -23,10 +38,11 @@ async def get_khiladi_dashboard(
     )
     db_khiladi = session.exec(statement).first()
 
-   
+    in_shadow_realm, shadow_message = get_shadow_realm_status(db_khiladi.total_xp)
+    net_xp = db_khiladi.total_xp - db_khiladi.xp_debt
+    current_progress, xp_to_next = get_xp_progress(db_khiladi.total_xp)
     
     lakshyas_list = []
-    
     
     for lak in db_khiladi.lakshyas:
         
@@ -57,14 +73,17 @@ async def get_khiladi_dashboard(
             )
         )
 
-    
     dashboard = DashboardResponse(
         khiladi_id=db_khiladi.id,
         name=db_khiladi.username,
         level=db_khiladi.level,
         current_xp=db_khiladi.total_xp,
+        xp_debt=db_khiladi.xp_debt,
+        in_shadow_realm=in_shadow_realm,
+        shadow_realm_message=shadow_message,
+        net_xp=net_xp,
+        xp_to_next_level=xp_to_next,
         lakshyas=lakshyas_list
     )
 
-    # 3. SHIP IT
     return dashboard

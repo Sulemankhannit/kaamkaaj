@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from routes import khiladi,kaam,lakshya,auth,dashboard
 from sqlmodel import SQLModel
 from core.config import engine
@@ -11,11 +12,24 @@ from core.limiter import Limiter,limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
+from utils.reaper import run_reaper
+import asyncio
 
+reaper_task = None
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global reaper_task
+    reaper_task = asyncio.create_task(run_reaper())
+    yield
+    if reaper_task:
+        reaper_task.cancel()
+        try:
+            await reaper_task
+        except asyncio.CancelledError:
+            pass
 
-
-app=FastAPI()
+app=FastAPI(lifespan=lifespan)
 
 # app.add_middleware(
 #     CORSMiddleware,
