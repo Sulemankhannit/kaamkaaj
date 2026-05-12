@@ -43,7 +43,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", # Allows  local frontend during testing
-        "https://kaamkaaj-sooty.vercel.app/" # Vercel URL
+        "https://kaamkaaj-sooty.vercel.app" # Vercel URL
     ],
     allow_credentials=True,
     allow_methods=["*"], # Allows GET, POST, PUT, DELETE
