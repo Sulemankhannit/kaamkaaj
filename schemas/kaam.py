@@ -11,13 +11,27 @@ class KaamStatus(str, Enum):
     pending = "pending"
     in_review = "in_review"   
     completed = "completed"   
-    rejected = "rejected"     
+    rejected = "rejected"
+           
 
 class KaamDifficulty(str, Enum):
     easy = "easy"
     medium = "medium"
     hard = "hard"
     epic = "epic"
+
+# Penalty multipliers based on difficulty (multiplied with xp_reward)
+PENALTY_MULTIPLIERS = {
+    KaamDifficulty.easy: 0.5,      # 50% of xp_reward
+    KaamDifficulty.medium: 0.75,    # 75% of xp_reward
+    KaamDifficulty.hard: 1.0,      # 100% of xp_reward
+    KaamDifficulty.epic: 1.5,      # 150% of xp_reward
+}
+
+def calculate_penalty_xp(difficulty: KaamDifficulty, xp_reward: int) -> int:
+    """Calculate penalty XP based on task difficulty and reward."""
+    multiplier = PENALTY_MULTIPLIERS.get(difficulty, 0.75)
+    return max(1, int(xp_reward * multiplier))  # Minimum 1 XP penalty
 
 # --- MAIN DATABASE TABLE ---
 class Kaam(SQLModel, table=True):
@@ -37,6 +51,11 @@ class Kaam(SQLModel, table=True):
     saboot_text: str | None = Field(default=None)        
     saboot_image_url: str | None = Field(default=None)   
     ai_feedback: str | None = Field(default=None)        
+    
+    # Penalty System Fields
+    penalty_xp: int = Field(default=0)
+    has_been_penalized: bool = Field(default=False)
+    failed_at: datetime | None = Field(default=None)
     
     # The Relational Locks
     lakshya_id: int = Field(foreign_key="lakshya.id")
