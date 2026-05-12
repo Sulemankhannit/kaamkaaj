@@ -17,19 +17,19 @@ import asyncio
 
 reaper_task = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global reaper_task
-    reaper_task = asyncio.create_task(run_reaper())
-    yield
-    if reaper_task:
-        reaper_task.cancel()
-        try:
-            await reaper_task
-        except asyncio.CancelledError:
-            pass
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     global reaper_task
+#     reaper_task = asyncio.create_task(run_reaper())
+#     yield
+#     if reaper_task:
+#         reaper_task.cancel()
+#         try:
+#             await reaper_task
+#         except asyncio.CancelledError:
+#             pass
 
-app=FastAPI(lifespan=lifespan)
+app=FastAPI()
 
 # app.add_middleware(
 #     CORSMiddleware,
