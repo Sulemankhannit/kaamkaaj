@@ -41,9 +41,12 @@ app=FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows Vercel and Cloudflare to talk to your laptop
+    allow_origins=[
+        "http://localhost:3000", # Allows  local frontend during testing
+        "https://kaamkaaj-sooty.vercel.app/" # Vercel URL
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"], # Allows GET, POST, PUT, DELETE
     allow_headers=["*"],
 )
 
