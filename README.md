@@ -446,4 +446,4 @@ Access the interactive API documentation at: `http://localhost:8000/docs`
 ---
 
 **Built with ⚔️ by [Suleman Khan](https://github.com/Sulemankhannit)**
->>>>>>> 44ba4d0 (added forgot password feature)
+
