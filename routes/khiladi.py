@@ -212,3 +212,84 @@ async def resend_otp(
     bg_tasks.add_task(send_otp_email, db_khiladi.email, db_khiladi.otp_code)
     
     return {"message": "Naya OTP bhej diya gaya hai. Apna email check karo!"}
+
+@router.get("/daily-message")
+async def get_daily_message(
+    current_khiladi: Khiladi = Depends(get_current_khiladi),
+    session: Session = Depends(get_session)
+):
+    from datetime import date
+    from schemas.daily_message import DailyMessage, DailyMessageResponse
+    from utils.daily_message_ai import generate_daily_message
+    from schemas.lakshya import Lakshya
+    from schemas.kaam import Kaam
+    from sqlalchemy.orm import selectinload
+    
+    today = date.today()
+    statement = select(DailyMessage).where(
+        DailyMessage.khiladi_id == current_khiladi.id,
+        DailyMessage.shown_at == today
+    )
+    existing_message = session.exec(statement).first()
+    
+    if existing_message:
+        return DailyMessageResponse(
+            message=existing_message.message,
+            message_type=existing_message.message_type,
+            mood=existing_message.mood,
+            is_new=False,
+            refresh_available_at=datetime.utcnow() + timedelta(days=1)
+        )
+        
+    from routes.dashboard import get_shadow_realm_status
+    in_shadow_realm, _ = get_shadow_realm_status(current_khiladi.total_xp)
+    
+    khiladi_statement = (
+        select(Khiladi)
+        .where(Khiladi.id == current_khiladi.id)
+        .options(
+            selectinload(Khiladi.lakshyas).selectinload(Lakshya.kaams)
+        )
+    )
+    db_khiladi = session.exec(khiladi_statement).first()
+    
+    tasks_completed_today = 0
+    overdue_tasks = 0
+    now = datetime.now()
+    
+    for lak in db_khiladi.lakshyas:
+        for kaam in lak.kaams:
+            if kaam.status == "completed":
+                if kaam.deadline and kaam.deadline.date() == today:
+                    tasks_completed_today += 1
+            elif kaam.status != "completed":
+                if kaam.deadline and kaam.deadline < now:
+                    overdue_tasks += 1
+
+    ai_response = generate_daily_message(
+        username=current_khiladi.username,
+        current_streak=current_khiladi.current_streak,
+        level=current_khiladi.level,
+        tasks_completed_today=tasks_completed_today,
+        overdue_tasks=overdue_tasks,
+        in_shadow_realm=in_shadow_realm
+    )
+    
+    new_message = DailyMessage(
+        khiladi_id=current_khiladi.id,
+        message=ai_response.message,
+        message_type=ai_response.message_type,
+        mood=ai_response.mood,
+        shown_at=today
+    )
+    session.add(new_message)
+    session.commit()
+    session.refresh(new_message)
+    
+    return DailyMessageResponse(
+        message=new_message.message,
+        message_type=new_message.message_type,
+        mood=new_message.mood,
+        is_new=True,
+        refresh_available_at=datetime.utcnow() + timedelta(days=1)
+    )

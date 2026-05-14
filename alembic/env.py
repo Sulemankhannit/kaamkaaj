@@ -8,6 +8,7 @@ from sqlmodel import SQLModel
 from schemas.khiladi import Khiladi
 from schemas.lakshya import Lakshya
 from schemas.kaam import Kaam
+from schemas.daily_message import DailyMessage
 from core.config import postgres_url
 
 # this is the Alembic Config object, which provides
