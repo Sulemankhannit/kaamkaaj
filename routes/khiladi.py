@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlmodel import Session,select
 from core.config import get_session
 from core.security import get_hashed_password,get_current_khiladi,check_password
-from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate,VerifyOtp,ResendOtpRequest,DeleteProfile
+from schemas.khiladi import Khiladi,KhiladiCreate,KhiladiProfile,KhiladiPublic,KhiladiUpdate,VerifyOtp,ResendOtpRequest,DeleteProfile,ForgotPasswordRequest,ResetPasswordRequest
 from utils.email import send_otp_email
 import time,secrets
 from datetime import datetime,timezone,timedelta
@@ -293,3 +293,78 @@ async def get_daily_message(
         is_new=True,
         refresh_available_at=datetime.utcnow() + timedelta(days=1)
     )
+
+
+@router.post("/forgot-password")
+@limiter.limit("3/minute") # Protect against spamming emails
+async def forgot_password(
+    request: Request,
+    payload: ForgotPasswordRequest,
+    bg_tasks: BackgroundTasks,
+    session: Annotated[Session, Depends(get_session)]
+):
+    statement = select(Khiladi).where(Khiladi.email == payload.email)
+    db_khiladi = session.exec(statement).first()
+
+    # Even if user doesn't exist, we usually return a generic message 
+    # to prevent "Email Enumeration" attacks (hackers guessing emails).
+    if not db_khiladi:
+        return {"message": "Agar ye email registered hai, toh OTP bhej diya gaya hai."}
+
+    # Generate new OTP (Reusing your logic)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    new_otp = "".join(secrets.choice("0123456789") for _ in range(6))
+    
+    db_khiladi.otp_code = new_otp
+    db_khiladi.otp_expires_at = now + timedelta(minutes=10)
+
+    session.add(db_khiladi)
+    session.commit()
+    session.refresh(db_khiladi)
+
+    # Send email in background
+    bg_tasks.add_task(send_otp_email, db_khiladi.email, db_khiladi.otp_code)
+
+    return {"message": "Agar ye email registered hai, toh OTP bhej diya gaya hai."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    session: Annotated[Session, Depends(get_session)]
+):
+    statement = select(Khiladi).where(Khiladi.email == payload.email)
+    db_khiladi = session.exec(statement).first()
+
+    if not db_khiladi:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bhai ye khiladi email exist nahi karti!"
+        )
+
+    # 1. Verify OTP exactly like you did in /verify-otp
+    if payload.user_otp != db_khiladi.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Galat OTP!"
+        )
+        
+    currenttime = datetime.now(timezone.utc).replace(tzinfo=None)
+    if not db_khiladi.otp_expires_at or currenttime > db_khiladi.otp_expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bhai ye code expire ho chuka hai, request a new one!"
+        )
+
+    # 2. OTP is valid! Now hash the new password and update
+    hashed_pw = get_hashed_password(payload.new_password)
+    db_khiladi.hashed_password = hashed_pw
+    
+    # 3. Clean up the OTP so it can't be reused
+    db_khiladi.otp_code = None
+    db_khiladi.otp_expires_at = None
+
+    session.add(db_khiladi)
+    session.commit()
+    
+    return {"message": "Mubarak ho! Password successfully change ho gaya hai. Aap ab login kar sakte hain."}

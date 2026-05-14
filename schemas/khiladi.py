@@ -68,3 +68,12 @@ class VerifyOtp(BaseModel):
 class ResendOtpRequest(BaseModel):
     email: EmailStr
 
+from pydantic import BaseModel, EmailStr, Field
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    user_otp: str
+    new_password: str = Field(min_length=8)

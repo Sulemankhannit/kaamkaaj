@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # KaamKaaj: The Accountability Engine
 
 > **To-do lists are broken. They rely on willpower. KaamKaaj relies on proof.**
@@ -338,3 +339,111 @@ KaamKaaj isn't just a website. It's a **Progressive Web App (PWA)** that install
 **Built by [Suleman Khan](https://github.com/Sulemankhannit)**
 
 *"The grind doesn't stop. Neither does your potential."*
+=======
+# 🗡️ KaamKaaj Backend: The Accountability Engine API
+
+> **To-do lists are broken. They rely on willpower. KaamKaaj relies on proof.**
+
+Welcome to the **KaamKaaj Backend** repository. This is the central brain of the KaamKaaj application, a hardcore, gamified productivity platform built to enforce accountability. Built on top of the robust FastAPI framework, this backend powers the core game loop, manages RPG elements like XP and streaks, and integrates cutting-edge AI to brutally evaluate user tasks and deliver personalized daily messages.
+
+---
+
+## 🛠️ The Backend Stack (FARP Architecture)
+
+This API forms the "F" and "P" of our **FARP Stack** (FastAPI, React, Postgres), delivering high-performance, type-safe endpoints.
+
+*   **Framework:** FastAPI (Python 3) for blazing-fast, asynchronous API delivery.
+*   **Database & ORM:** PostgreSQL (hosted on Neon.tech) via **SQLModel** (SQLAlchemy + Pydantic) for seamless data validation and persistence.
+*   **Migrations:** Alembic for robust database schema versioning.
+*   **Authentication:** OAuth2 with JWT (JSON Web Tokens) & custom OTP-based Email Verification.
+*   **Storage:** Cloudinary API for multipart form-data image streaming and asset management.
+*   **AI Engine:** Google Gemini API (`google-genai`), acting as the relentless "Game Master" for task evaluation and personalized daily accountability messages.
+*   **Rate Limiting:** SlowAPI to protect critical endpoints.
+
+---
+
+## 🎯 Core Features & Modules
+
+### 1. The Khiladi System (User Management)
+*   JWT-based secure authentication.
+*   OTP email verification flow for secure registration and password resets.
+*   Tracks core RPG stats: Level, XP, Rank (e.g., Novice, Iron, Master), Streak, and Total Tasks Completed.
+
+### 2. Lakshya & Kaam (Quests & Tasks)
+*   **Lakshya:** High-level goals (e.g., "Master System Design").
+*   **Kaam:** Specific, actionable sub-tasks.
+*   Tasks require "Saboot" (Proof) in the form of uploaded images (streamed to Cloudinary).
+
+### 3. The AI Game Master (Gemini Integration)
+*   **Task Reviewer (`ai_reviewer.py`):** Asynchronously evaluates user-submitted image proof against task descriptions. Issues a Pass/Fail verdict, updates XP/Streaks, and generates hardcore, personalized feedback.
+*   **Daily Message (`daily_message_ai.py`):** Generates a dynamic, context-aware daily motivational (or brutal) message using the user's current stats, streak, and recent task history.
+
+### 4. The Reaper (`reaper.py`)
+*   An automated background worker that hunts for uncompleted tasks past their deadlines, marking them as failed and resetting user streaks to enforce true accountability.
+
+---
+
+## 🚀 Setup & Local Development
+
+### 1. Prerequisites
+*   Python 3.10+
+*   PostgreSQL (Local or Neon Cloud)
+*   Cloudinary Account
+*   Google Gemini API Key
+
+### 2. Installation
+```bash
+# Clone the repository
+git clone <repo-url>
+cd kaamkaaj-backend
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. Environment Variables (`.env`)
+Create a `.env` file in the root directory:
+```env
+DATABASE_URL=postgresql://user:pass@host/db
+SECRET_KEY=your_super_secret_jwt_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+GEMINI_API_KEY=your_gemini_key
+EMAIL_HOST=smtp.your-email.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
+```
+
+### 4. Database Setup (Alembic)
+```bash
+# Apply migrations to your database
+alembic upgrade head
+```
+
+### 5. Run the Server
+```bash
+# Start the FastAPI development server
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+Access the interactive API documentation at: `http://localhost:8000/docs`
+
+---
+
+## ⚔️ Engineering Highlights
+
+*   **Asynchronous AI Evaluation:** AI image evaluation (2-4s) is offloaded to background tasks to prevent blocking API responses, pairing perfectly with frontend React Query polling.
+*   **Dynamic XP Scaling:** Custom `xp_utils.py` handles progressive level scaling, ensuring the grind gets harder as the Khiladi levels up.
+*   **Payload Sanitization:** Robust Pydantic schemas paired with FastAPI exception handlers return actionable, human-readable error messages (e.g., "Bhai, the data you sent is invalid!").
+
+---
+
+**Built with ⚔️ by [Suleman Khan](https://github.com/Sulemankhannit)**
+>>>>>>> 44ba4d0 (added forgot password feature)
