@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # KaamKaaj: The Accountability Engine
 
 > **To-do lists are broken. They rely on willpower. KaamKaaj relies on proof.**
