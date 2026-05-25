@@ -3,3 +3,5 @@ __pycache__/
 .env
 .vercel
 .env*.local
+project_dump.md
+
