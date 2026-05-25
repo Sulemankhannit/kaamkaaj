@@ -15,7 +15,38 @@ from slowapi.errors import RateLimitExceeded
 from fastapi.middleware.cors import CORSMiddleware
 from utils.reaper import run_reaper
 import asyncio
+import time
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
+class VercelLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        
+        try:
+            # Process the request
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            
+            # If it's a success (200-299)
+            if 200 <= response.status_code < 300:
+                print(f"✅ VERCEL LOG: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.4f}s")
+            
+            # If it's a soft error (400-499 like bad validation or unauthorized)
+            elif 400 <= response.status_code < 500:
+                print(f"⚠️ VERCEL WARNING: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.4f}s")
+                
+            # If it's a server crash (500+)
+            else:
+                print(f"❌ VERCEL ERROR: {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.4f}s")
+                
+            return response
+
+        except Exception as e:
+            # If a catastrophic error bypasses FastAPI's error handler
+            process_time = time.time() - start_time
+            print(f"🔥 VERCEL FATAL CRASH: {request.method} {request.url.path} - Exception: {str(e)} - Time: {process_time:.4f}s")
+            raise e
 reaper_task = None
 
 # @asynccontextmanager
@@ -50,7 +81,7 @@ app.add_middleware(
     allow_methods=["*"], # Allows GET, POST, PUT, DELETE
     allow_headers=["*"],
 )
-
+app.add_middleware(VercelLoggingMiddleware)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
